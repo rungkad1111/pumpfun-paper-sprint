@@ -11,17 +11,20 @@
 // The defaults were picked by sweeping the kit pilot's parameters and grading each candidate
 // with the kit's own grade-local on the FULL dev window — the local sim only sees the first
 // part of the window and ranked the add-on variants backwards, so only full-window grades
-// counted. Two filters mattered most: minTrades (a launch with no early tape is an instant
-// dump: requiring 3 trades before entry cut the dev loss from -0.42 SOL to -0.26 SOL) and a
-// small stake (0.05 SOL: the 1%-of-reserve cap binds anyway, and smaller tickets lose less
-// per false start). A flow filter (minimum net inflow + distinct recent buyers) improved dev
-// PnL further to -0.14 SOL, but it cut traded coins to ~90 in 24h, which scales to ~17 in a
-// 6h window: below the 20-coin guardrail in a quiet window like the final one (05:40-11:40
-// UTC lines up with the dev window's quiet slices). The final window is 6h, not 24h, so
-// breadth is a guardrail, not a luxury: this configuration trades 177 coins in 24h (~35 in
-// the final window's expected activity) at a dev net of -0.26 SOL and ~3% drawdown against
-// the 50% guardrail. Pyramid adds looked good on the sim's half window but LOST on the full
-// window, so they stay off.
+// counted. The submitted config (stake 0.05 SOL, TP +25% / SL -8% / hold 25, split fills)
+// graded -0.2587 SOL on dev, rank ~145/232. A 32-candidate post-submit sweep found the
+// per-trade expected value is negative, so the wins are all about shrinking the ticket and
+// the bleed: (1) minimum-size tickets — stake 0.01 SOL, exactly the 0.01 SOL round-trip
+// minimum, with minBuy 0.01 SOL so no sub-minimum buy ever pays fees without counting;
+// (2) no order splitting (maxSplit 1) — split pieces fill at the same price, so splits were
+// pure extra tx fees (~0.018 SOL over the window); (3) a tight stop (-4%) and a short hold
+// (10 slots) to cut losers before they slide. Dev result: net -0.0747 SOL, 159 coins
+// (33/40/59/34 per 6h slice — guardrail-safe in the quiet final-window hours), max
+// drawdown 0.008, stress 20-copy median -0.0885 (vs -0.269 for the submitted config).
+// Selectivity that looked better on dev (minTrades 4: -0.046; maxBuyers 2: -0.032) was
+// rejected: both drop below 20 coins in a quiet 6h slice, which ranks below every
+// guardrail-passing entry whatever the PnL. Pyramid adds looked good on the sim's half
+// window but LOST on the full window, so they stay off.
 //
 // A pure function of the batches it is fed: no clock, no randomness, no I/O, so the two
 // graded executions produce byte-identical action logs.
@@ -94,8 +97,8 @@ export interface Params {
 export const DEFAULT_PARAMS: Params = {
   minAge: 0,
   maxAge: 3,
-  stakeLamports: 50_000_000,
-  minBuyLamports: 5_000_000,
+  stakeLamports: 10_000_000,
+  minBuyLamports: 10_000_000,
   minRealSol: 300_000_000,
   maxRealSol: 30_000_000_000,
   minDevBuy: 0,
@@ -113,15 +116,15 @@ export const DEFAULT_PARAMS: Params = {
   skipDevSold: true,
   buySlippageBps: 10_000,
   tpBps: 2_500,
-  slBps: 800,
-  maxHold: 25,
+  slBps: 400,
+  maxHold: 10,
   exitOnDevSell: true,
   staleSlots: 1_000_000,
   exitFlowLamports: 1_000_000_000_000,
   fillTarget: 300,
   windowSeconds: 21_600,
   baseSplit: 1,
-  maxSplit: 6,
+  maxSplit: 1,
   minPieceLamports: 2_000_000,
 };
 
