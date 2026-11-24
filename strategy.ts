@@ -11,11 +11,17 @@
 // the pilot's parameters and verifying each candidate with the kit's own grade-local on the FULL
 // window — not on the local sim alone, whose fast engine only sees the first part of the window
 // and ranked the add-on variants backwards. The two filters that mattered most were minTrades
-// (a launch with no early tape is an instant dump: requiring 4 trades before entry cut the dev
-// loss from -0.42 SOL to -0.18 SOL) and a small stake (0.05 SOL: the 1%-of-reserve cap binds
-// anyway, and smaller tickets lose less per false start). Pyramid adds looked good on the sim's
-// half window but LOST on the full window, so they stay off. Drawdown on dev is ~2% against the
-// 50% guardrail, and the bot trades 100+ distinct coins, far above the 20-coin bar.
+// (a launch with no early tape is an instant dump: requiring 3 trades before entry cut the dev
+// loss from -0.42 SOL to -0.26 SOL) and a small stake (0.05 SOL: the 1%-of-reserve cap binds
+// anyway, and smaller tickets lose less per false start). A flow filter (min net inflow +
+// distinct recent buyers) improved dev PnL further, to -0.14 SOL — but it cut the traded coins
+// to ~90 in 24h, which scales to ~17 in a 6h window: below the 20-coin guardrail in a
+// low-activity window like the final one (05:40-11:40 UTC lines up with the dev window's quiet
+// slices). The final window is 6h, not 24h, so breadth is a guardrail, not a luxury: this
+// configuration trades 177 coins in 24h (~35 in the final window's expected activity) at a dev
+// net of -0.26 SOL, drawdown ~3% against the 50% guardrail. Pyramid adds looked good on the
+// sim's half window but LOST on the full window, so they stay off. Drawdown on dev is ~3%
+// against the 50% guardrail, and the bot trades 177 distinct coins, far above the 20-coin bar.
 //
 // A pure function of the batches it is fed: no clock, no randomness, no I/O, so the two graded
 // executions produce byte-identical action logs.
@@ -86,14 +92,14 @@ export interface Params {
 
 export const DEFAULT_PARAMS: Params = {
   minAge: 0,
-  maxAge: 10,
+  maxAge: 3,
   stakeLamports: 50_000_000,
   minBuyLamports: 5_000_000,
   minRealSol: 300_000_000,
   maxRealSol: 30_000_000_000,
   minDevBuy: 0,
   maxDevBuy: 2_500_000_000,
-  minTrades: 4,
+  minTrades: 3,
   minBuyers: 0,
   maxBuyers: 3,
   maxSellRatioBps: 10_000,
